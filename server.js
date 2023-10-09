@@ -39,6 +39,7 @@ app.get("/", async (req, res, next) => {
 app.get("/api/blog-search", (req, res) => {
   const keyword = req.query.query.toLowerCase();
   const blogs = req.blogs; //this is a different route than the previous route, so it will not load
+  // help me find the blogs array I have fetched in the previous route to work on this route
   console.log(blogs);
   res.send("hello world");
 });
