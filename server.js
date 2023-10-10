@@ -5,24 +5,40 @@ const app = express();
 let blogsData = null;
 
 async function fetchData() {
-  const response = await fetch(
-    "https://intent-kit-16.hasura.app/api/rest/blogs",
-    {
-      method: "GET",
-      headers: {
-        "x-hasura-admin-secret":
-          "32qR4KmXOIpsGPQKMqEJHGJS27G5s7HdSKO3gdtQd2kv5e852SiYwWNfxkZOBuQ6",
-      },
+  try {
+    if (!blogsData) {
+      const response = await fetch(
+        "https://intent-kit-16.hasura.app/api/rest/blogs",
+        {
+          method: "GET",
+          headers: {
+            "x-hasura-admin-secret":
+              "32qR4KmXOIpsGPQKMqEJHGJS27G5s7HdSKO3gdtQd2kv5e852SiYwWNfxkZOBuQ6",
+          },
+        }
+      );
+      if (!response.ok) {
+        throw new Error("Can't fetch api data");
+      }
+
+      blogsData = await response.json();
     }
-  );
-  blogsData = await response.json();
+    return blogsData;
+  } catch (err) {
+    console.log(err);
+  }
 }
 
-fetchData = _.memoize(fetchData);
-fetchData();
+async function memoizedFetchData() {
+  if (!memoizedFetchData.cache) {
+    console.log("Data fetch check"); //flag to check if data is being fetched or not
+    memoizedFetchData.cache = await fetchData();
+  }
+  return memoizedFetchData.cache;
+}
 
-app.use((req, res, next) => {
-  x = blogsData;
+app.use(async (req, res, next) => {
+  let x = await memoizedFetchData();
   req.blogs = x["blogs"];
   next();
 });
