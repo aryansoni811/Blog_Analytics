@@ -2,8 +2,9 @@ const express = require("express");
 const _ = require("lodash");
 
 const app = express();
+let blogsData = null;
 
-app.get("/", async (req, res, next) => {
+async function fetchData() {
   const response = await fetch(
     "https://intent-kit-16.hasura.app/api/rest/blogs",
     {
@@ -14,34 +15,53 @@ app.get("/", async (req, res, next) => {
       },
     }
   );
-  const blogs = await response.json();
-  const blog_list = blogs["blogs"];
+  blogsData = await response.json();
+}
+
+fetchData = _.memoize(fetchData);
+fetchData();
+
+app.use((req, res, next) => {
+  x = blogsData;
+  req.blogs = x["blogs"];
+  next();
+});
+
+app.use("/api/blog-stats", async (req, res, next) => {
+  const blog_list = req.blogs;
+
   //for maximum length of blog title
   const longestTitleBlog = _.maxBy(blog_list, "title.length");
+
   //to filter blogs with 'privacy' in title
   const privacyBlogs = blog_list.filter((value) =>
     value.title.toLowerCase().includes("privacy")
   );
+
   //total blogs with unique title
   const uniqTitles = _.uniqBy(blog_list, "title");
 
-  console.log(blog_list);
   res.json({
     totalBlogs: blog_list.length,
     longestTitle: longestTitleBlog.title,
     privacyBlogs: privacyBlogs.length,
-    blogsWithUniqueTitles: uniqTitles.length,
+    blogsWithUniqueTitles: uniqTitles,
   });
-  req.blogs = blogs;
-  next();
 });
 
 app.get("/api/blog-search", (req, res) => {
   const keyword = req.query.query.toLowerCase();
-  const blogs = req.blogs; //this is a different route than the previous route, so it will not load
-  // help me find the blogs array I have fetched in the previous route to work on this route
-  console.log(blogs);
-  res.send("hello world");
+  const blog_list = req.blogs;
+
+  const search = blog_list.filter((value) =>
+    value.title.toLowerCase().includes(keyword)
+  );
+
+  if (search.length === 0) {
+    res.send("NO Blogs found!");
+  } else {
+    res.send({ results: search });
+  }
 });
 
-app.listen(3000);
+app.listen(4000);
