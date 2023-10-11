@@ -80,4 +80,6 @@ app.get("/api/blog-search", (req, res) => {
   }
 });
 
-app.listen(4000);
+app.listen((port = 3000), () => {
+  console.log(`Server is running on port ${port}`);
+});
